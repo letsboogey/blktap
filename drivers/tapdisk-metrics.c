@@ -44,7 +44,7 @@ empty_folder(char *path)
     DIR *dir;
     struct dirent *direntry;
     struct stat statbuf;
-    char *file;
+    char *file = NULL;
     int err = 0;
 
     dir = opendir(path);
@@ -60,6 +60,8 @@ empty_folder(char *path)
 
         err = asprintf(&file, "%s/%s", path, direntry->d_name);
         if (unlikely(err == -1)) {
+            free(file);
+            file = NULL;	
             err = errno;
             EPRINTF("failed to allocate file path name in memory to delete: %s\n",
                 strerror(err));
@@ -73,6 +75,7 @@ empty_folder(char *path)
             rmdir(file);
         }
         free(file);
+	file = NULL;
     }
 
 out:
@@ -86,7 +89,7 @@ int
 td_metrics_start()
 {
     int err = 0;
-
+    
     err = asprintf(&td_metrics.path, TAPDISK_METRICS_PATHF, getpid());
     if (unlikely(err == -1)) {
         err = errno;
@@ -150,7 +153,7 @@ td_metrics_vdi_start(int minor, stats_t *vdi_stats)
         err = errno;
         EPRINTF("failed to allocate memory to store vdi metrics path: %s\n",
             strerror(err));
-        vdi_stats->shm.path = NULL;
+	vdi_stats->shm.path = NULL;
         goto out;
     }
 
@@ -189,6 +192,7 @@ td_metrics_vdi_stop(stats_t *vdi_stats)
 end:
     return err;
 }
+
 int
 td_metrics_vbd_start(int domain, int id, stats_t *vbd_stats)
 {
